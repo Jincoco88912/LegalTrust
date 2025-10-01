@@ -2,7 +2,6 @@ import time
 import base64
 import os
 import asyncio
-from concurrent.futures import ThreadPoolExecutor
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 from playwright.sync_api import sync_playwright
@@ -181,16 +180,13 @@ async def query_penalty_endpoint(request: PenaltyQueryRequest):
         print(f"收到查詢請求：身分證字號={request.user_id}, 生日={request.birthday}")
         print(f"{'='*50}\n")
         
-        # 在線程池中執行同步的 Playwright 代碼
-        loop = asyncio.get_event_loop()
-        with ThreadPoolExecutor() as executor:
-            result = await loop.run_in_executor(
-                executor,
-                query_penalty,
-                request.user_id,
-                request.birthday,
-                request.headless
-            )
+        # 使用 asyncio.to_thread 在線程中執行同步的 Playwright 代碼
+        result = await asyncio.to_thread(
+            query_penalty,
+            request.user_id,
+            request.birthday,
+            request.headless
+        )
         
         return PenaltyQueryResponse(**result)
         
