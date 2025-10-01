@@ -1,0 +1,33 @@
+version: '3.8'
+
+services:
+  penalty-query-api:
+    build: .
+    container_name: penalty-query-api
+    ports:
+      - "8000:8000"
+    environment:
+      # 從 .env 檔案載入環境變數
+      - CAPTCHA_API_KEY=${CAPTCHA_API_KEY}
+      - USER_ID=${USER_ID:-}
+      - BIRTHDAY=${BIRTHDAY:-}
+      - TARGET_URL=${TARGET_URL:-https://www.mvdis.gov.tw/m3-emv-vil/vil/penaltyQueryPay}
+    env_file:
+      - .env
+    restart: unless-stopped
+    # 限制資源使用（可選）
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+        reservations:
+          cpus: '1'
+          memory: 1G
+    # 健康檢查
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s

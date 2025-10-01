@@ -45,3 +45,7 @@ config.py
 secrets.json
 .env
 .env.local
+
+# Docker
+*.tar
+docker-compose.override.yml
