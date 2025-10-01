@@ -26,7 +26,7 @@ cat .env
 #### 2. 一鍵啟動服務
 
 ```bash
-docker-compose up -d
+docker compose up -d
 ```
 
 就這麼簡單！🎉
@@ -35,13 +35,13 @@ docker-compose up -d
 
 ```bash
 # 查看運行狀態
-docker-compose ps
+docker compose ps
 
 # 查看日誌
-docker-compose logs -f
+docker compose logs -f
 
 # 查看最近 100 行日誌
-docker-compose logs --tail=100
+docker compose logs --tail=100
 ```
 
 #### 4. 測試 API
@@ -63,13 +63,13 @@ curl -X POST "http://localhost:8000/query" \
 
 ```bash
 # 停止但保留容器
-docker-compose stop
+docker compose stop
 
 # 停止並刪除容器
-docker-compose down
+docker compose down
 
 # 停止並刪除容器及映像
-docker-compose down --rmi all
+docker compose down --rmi all
 ```
 
 ---
@@ -111,13 +111,13 @@ docker rm penalty-query-api
 
 | 指令 | 說明 |
 |------|------|
-| `docker-compose up -d` | 啟動服務（背景執行） |
-| `docker-compose up --build` | 重新建立映像並啟動 |
-| `docker-compose down` | 停止並移除容器 |
-| `docker-compose ps` | 查看服務狀態 |
-| `docker-compose logs -f` | 即時查看日誌 |
-| `docker-compose restart` | 重啟服務 |
-| `docker-compose exec penalty-query-api bash` | 進入容器 shell |
+| `docker compose up -d` | 啟動服務（背景執行） |
+| `docker compose up --build` | 重新建立映像並啟動 |
+| `docker compose down` | 停止並移除容器 |
+| `docker compose ps` | 查看服務狀態 |
+| `docker compose logs -f` | 即時查看日誌 |
+| `docker compose restart` | 重啟服務 |
+| `docker compose exec penalty-query-api bash` | 進入容器 shell |
 
 ---
 
@@ -125,7 +125,7 @@ docker rm penalty-query-api
 
 ### 修改端口映射
 
-編輯 `docker-compose.yml`：
+編輯 `docker compose.yml`：
 
 ```yaml
 ports:
@@ -134,7 +134,7 @@ ports:
 
 ### 設定資源限制
 
-已在 `docker-compose.yml` 中預設配置：
+已在 `docker compose.yml` 中預設配置：
 
 ```yaml
 deploy:
@@ -158,7 +158,7 @@ docker stats penalty-query-api
 
 ```bash
 # 啟動 3 個實例
-docker-compose up -d --scale penalty-query-api=3
+docker compose up -d --scale penalty-query-api=3
 ```
 
 注意：需要配置 Nginx 或其他負載均衡器。
@@ -205,10 +205,10 @@ docker inspect --format='{{.State.Health.Status}}' penalty-query-api
 
 ```bash
 # 查看詳細日誌
-docker-compose logs
+docker compose logs
 
 # 檢查容器狀態
-docker-compose ps
+docker compose ps
 ```
 
 ### 問題 2：找不到 .env 檔案
@@ -227,7 +227,7 @@ nano .env
 # 查看哪個程式占用 8000 端口
 lsof -i :8000
 
-# 修改 docker-compose.yml 中的端口映射
+# 修改 docker compose.yml 中的端口映射
 ports:
   - "8001:8000"
 ```
@@ -236,16 +236,16 @@ ports:
 
 ```bash
 # 清理並重新建立
-docker-compose down
-docker-compose build --no-cache
-docker-compose up -d
+docker compose down
+docker compose build --no-cache
+docker compose up -d
 ```
 
 ### 問題 5：Playwright 瀏覽器錯誤
 
 ```bash
 # 重新建立映像（確保安裝了瀏覽器驅動）
-docker-compose build --no-cache
+docker compose build --no-cache
 ```
 
 ---
@@ -256,19 +256,19 @@ docker-compose build --no-cache
 
 ```bash
 # 1. 停止現有容器
-docker-compose down
+docker compose down
 
 # 2. 重新建立映像
-docker-compose build
+docker compose build
 
 # 3. 啟動新容器
-docker-compose up -d
+docker compose up -d
 ```
 
 或一行搞定：
 
 ```bash
-docker-compose up -d --build
+docker compose up -d --build
 ```
 
 ---
@@ -325,14 +325,14 @@ server {
 
 ```bash
 # 設定 restart policy
-docker-compose up -d --restart=always
+docker compose up -d --restart=always
 ```
 
 ### 3. 監控和日誌
 
 ```bash
 # 使用 Docker 日誌驅動
-docker-compose logs --since 1h > app.log
+docker compose logs --since 1h > app.log
 
 # 或整合 ELK Stack / Prometheus
 ```
@@ -340,8 +340,8 @@ docker-compose logs --since 1h > app.log
 ### 4. 備份配置
 
 ```bash
-# 定期備份 .env 和 docker-compose.yml
-tar -czf backup-$(date +%Y%m%d).tar.gz .env docker-compose.yml
+# 定期備份 .env 和 docker compose.yml
+tar -czf backup-$(date +%Y%m%d).tar.gz .env docker compose.yml
 ```
 
 ---
@@ -352,7 +352,7 @@ tar -czf backup-$(date +%Y%m%d).tar.gz .env docker-compose.yml
 
 ```bash
 # 建立時使用 BuildKit
-DOCKER_BUILDKIT=1 docker-compose build
+DOCKER_BUILDKIT=1 docker compose build
 ```
 
 ### 2. 多階段建構（進階）
@@ -381,11 +381,11 @@ cp .env.example .env
 nano .env  # 填入 API Key
 
 # 3. 啟動服務
-docker-compose up -d
+docker compose up -d
 
 # 4. 查看狀態
-docker-compose ps
-docker-compose logs -f
+docker compose ps
+docker compose logs -f
 
 # 5. 測試 API
 curl http://localhost:8000/health
@@ -408,7 +408,7 @@ curl http://localhost:8000/health
 
 部署後檢查：
 
-- [ ] 容器正在運行 (`docker-compose ps`)
+- [ ] 容器正在運行 (`docker compose ps`)
 - [ ] 健康檢查通過 (`curl http://localhost:8000/health`)
 - [ ] API 文檔可訪問 (`http://localhost:8000/docs`)
 - [ ] 查詢功能正常
@@ -418,7 +418,7 @@ curl http://localhost:8000/health
 ## 📞 支援
 
 如有問題，請：
-1. 查看日誌：`docker-compose logs -f`
+1. 查看日誌：`docker compose logs -f`
 2. 檢查健康狀態：`docker inspect penalty-query-api`
 3. 提交 Issue 或聯繫維護者
 

@@ -30,11 +30,11 @@ echo ""
 
 # 停止舊容器（如果存在）
 echo "🔄 停止舊容器..."
-docker-compose down 2>/dev/null
+docker compose down 2>/dev/null
 
 echo ""
 echo "🏗️  建立 Docker 映像..."
-docker-compose build
+docker compose build
 
 if [ $? -ne 0 ]; then
     echo "❌ Docker 映像建立失敗"
@@ -43,7 +43,7 @@ fi
 
 echo ""
 echo "🚀 啟動服務..."
-docker-compose up -d
+docker compose up -d
 
 if [ $? -ne 0 ]; then
     echo "❌ 服務啟動失敗"
@@ -56,7 +56,7 @@ sleep 5
 
 echo ""
 echo "🔍 檢查服務狀態..."
-docker-compose ps
+docker compose ps
 
 echo ""
 echo "======================================"
@@ -69,9 +69,9 @@ echo "  • API 文檔: http://localhost:8000/docs"
 echo "  • 健康檢查: http://localhost:8000/health"
 echo ""
 echo "📝 常用指令："
-echo "  • 查看日誌: docker-compose logs -f"
-echo "  • 停止服務: docker-compose down"
-echo "  • 重啟服務: docker-compose restart"
+echo "  • 查看日誌: docker compose logs -f"
+echo "  • 停止服務: docker compose down"
+echo "  • 重啟服務: docker compose restart"
 echo ""
 echo "🧪 測試 API："
 echo '  curl http://localhost:8000/health'
