@@ -4,7 +4,7 @@ import os
 import asyncio
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
-from playwright.sync_api import sync_playwright
+from playwright.async_api import async_playwright
 from twocaptcha import TwoCaptcha
 from dotenv import load_dotenv
 
@@ -68,35 +68,47 @@ def solve_captcha(image_base64: str, api_key: str) -> str:
         raise
 
 
-def query_penalty(user_id: str, birthday: str, headless: bool = True) -> dict:
+async def query_penalty(user_id: str, birthday: str, headless: bool = True) -> dict:
     """查詢交通罰單"""
     
     # 檢查 API Key
     if not CAPTCHA_API_KEY or CAPTCHA_API_KEY == "YOUR_API_KEY":
         raise ValueError("未設定 2captcha API Key，請在 .env 檔案中設定 CAPTCHA_API_KEY")
     
-    with sync_playwright() as p:
-        browser = p.chromium.launch(headless=headless)
-        page = browser.new_page()
+    print("正在啟動 Playwright...")
+    async with async_playwright() as p:
+        print("正在啟動 Chromium 瀏覽器...")
+        browser = await p.chromium.launch(
+            headless=headless,
+            args=[
+                '--no-sandbox',
+                '--disable-setuid-sandbox',
+                '--disable-dev-shm-usage',
+                '--disable-gpu'
+            ]
+        )
+        print("✓ 瀏覽器已啟動")
+        page = await browser.new_page()
+        print("✓ 新分頁已建立")
         
         try:
             print(f"正在前往目標網頁: {TARGET_URL}")
-            page.goto(TARGET_URL, timeout=30000)
+            await page.goto(TARGET_URL, timeout=30000)
             
             print(f"正在填寫身分證字號: {user_id}")
-            page.locator("#id1").fill(user_id)
+            await page.locator("#id1").fill(user_id)
             
             print(f"正在填寫出生年月日: {birthday}")
-            page.locator("#birthday").fill(birthday)
+            await page.locator("#birthday").fill(birthday)
             
             print("正在抓取驗證碼圖片...")
             
             # 直接從 img 元素抓取圖片並轉為 base64
             captcha_element = page.locator("#pickimg1")
-            captcha_element.wait_for(timeout=10000)
+            await captcha_element.wait_for(timeout=10000)
             
             # 截取驗證碼圖片
-            captcha_screenshot = captcha_element.screenshot()
+            captcha_screenshot = await captcha_element.screenshot()
             captcha_base64 = base64.b64encode(captcha_screenshot).decode('utf-8')
             
             print(f"✓ 驗證碼圖片已抓取 (大小: {len(captcha_screenshot)} bytes)")
@@ -106,16 +118,16 @@ def query_penalty(user_id: str, birthday: str, headless: bool = True) -> dict:
             
             print(f"正在填寫驗證碼: {captcha_code}")
             # 使用更精確的選擇器定位第一個驗證碼輸入框（搜尋表單中的）
-            page.get_by_role("table", name="搜尋表單").locator("#validateStr").fill(captcha_code)
+            await page.get_by_role("table", name="搜尋表單").locator("#validateStr").fill(captcha_code)
             print("驗證碼已填寫。")
             
             print("正在點擊查詢按鈕...")
             # 直接執行 onclick 事件中的 JavaScript 函數
-            page.evaluate("query(1)")
+            await page.evaluate("query(1)")
             
             # 等待結果載入
             print("等待查詢結果...")
-            time.sleep(3)
+            await asyncio.sleep(3)
             
             # 獲取當前頁面 URL
             result_url = page.url
@@ -138,7 +150,7 @@ def query_penalty(user_id: str, birthday: str, headless: bool = True) -> dict:
                 "error": str(e)
             }
         finally:
-            browser.close()
+            await browser.close()
 
 
 @app.get("/")
@@ -180,9 +192,8 @@ async def query_penalty_endpoint(request: PenaltyQueryRequest):
         print(f"收到查詢請求：身分證字號={request.user_id}, 生日={request.birthday}")
         print(f"{'='*50}\n")
         
-        # 使用 asyncio.to_thread 在線程中執行同步的 Playwright 代碼
-        result = await asyncio.to_thread(
-            query_penalty,
+        # 直接調用 async 函數
+        result = await query_penalty(
             request.user_id,
             request.birthday,
             request.headless

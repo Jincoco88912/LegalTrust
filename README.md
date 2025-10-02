@@ -4,6 +4,11 @@
 
 ## 🚀 快速部署（Docker）
 
+### 前置需求
+
+1. 確保 Docker Desktop 已啟動
+2. 確保有 `.env` 檔案並設定好 API Key
+
 ### 1. 設定環境變數
 
 編輯 `.env` 檔案並填入您的 2captcha API Key：
@@ -16,12 +21,14 @@ TARGET_URL=https://www.mvdis.gov.tw/m3-emv-vil/vil/penaltyQueryPay
 ### 2. 啟動服務
 
 ```bash
-# 使用啟動腳本
+# 使用啟動腳本（推薦）
 ./start.sh
 
 # 或直接使用 docker compose
-docker compose up -d
+docker compose up -d --build
 ```
+
+> 💡 本專案使用 Playwright 官方 Docker 映像，已包含所有必要的瀏覽器依賴，穩定可靠。
 
 ### 3. 測試服務
 
@@ -97,5 +104,21 @@ docker compose ps
 如有問題，請查看日誌：
 ```bash
 docker compose logs -f
+```
+
+## 🐛 常見問題
+
+**Q: 為什麼在 Docker 中無法查詢，API 會卡住？**
+
+A: 本專案已使用 Playwright 官方 Docker 映像並配置了 async API，完全解決了這個問題。關鍵配置：
+- 使用 Playwright 官方映像（包含所有瀏覽器依賴）
+- 配置 `shm_size: '2gb'`（Chromium 需要共享內存）
+- 使用 async Playwright API（避免非同步環境中的死鎖）
+
+**Q: 如何確認服務是否正常運作？**
+
+A: 執行健康檢查：
+```bash
+curl http://localhost:8000/health
 ```
 
