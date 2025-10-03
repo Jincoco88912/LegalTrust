@@ -41,9 +41,8 @@ class PenaltyQueryRequest(BaseModel):
 class PenaltyQueryResponse(BaseModel):
     success: bool = Field(..., description="查詢是否成功")
     message: str = Field(..., description="訊息")
-    captcha_code: str = Field(None, description="識別的驗證碼")
     user_id: str = Field(None, description="查詢的身分證字號")
-    result_url: str = Field(None, description="結果頁面 URL")
+    result_text: str = Field(None, description="罰單頁面文字內容")
     error: str = Field(None, description="錯誤訊息")
 
 
@@ -125,21 +124,65 @@ async def query_penalty(user_id: str, birthday: str, headless: bool = True) -> d
             # 直接執行 onclick 事件中的 JavaScript 函數
             await page.evaluate("query(1)")
             
-            # 等待結果載入
+            # 等待頁面跳轉
             print("等待查詢結果...")
             await asyncio.sleep(3)
             
             # 獲取當前頁面 URL
             result_url = page.url
+            print(f"當前頁面: {result_url}")
+            
+            # 第一步：抓取可線上繳納的罰單 (method=pagination)
+            print("正在抓取可線上繳納的罰單內容...")
+            pagination_text = ""
+            
+            try:
+                # 等待 tab_frame 元素出現
+                tab_frame = page.locator(".tab_frame")
+                await tab_frame.wait_for(timeout=10000, state="visible")
+                
+                # 提取純文字內容
+                pagination_text = await tab_frame.inner_text()
+                print(f"✓ 已抓取可線上繳納罰單內容 (長度: {len(pagination_text)} 字元)")
+                
+            except Exception as e:
+                print(f"⚠️ 抓取可線上繳納罰單時發生錯誤: {e}")
+                pagination_text = "無法抓取可線上繳納罰單內容"
+            
+            # 第二步：導航到不可線上繳納的罰單頁面 (method=nopayPagination)
+            print("正在前往不可線上繳納罰單頁面...")
+            nopay_url = "https://www.mvdis.gov.tw/m3-emv-vil/vil/penaltyQueryPay?method=nopayPagination#gsc.tab=0"
+            nopay_text = ""
+            
+            try:
+                await page.goto(nopay_url, timeout=30000)
+                print(f"✓ 已前往: {nopay_url}")
+                
+                # 等待頁面載入
+                await asyncio.sleep(2)
+                
+                # 抓取 tab_frame 元素的文字內容
+                tab_frame = page.locator(".tab_frame")
+                await tab_frame.wait_for(timeout=10000, state="visible")
+                
+                # 提取純文字內容
+                nopay_text = await tab_frame.inner_text()
+                print(f"✓ 已抓取不可線上繳納罰單內容 (長度: {len(nopay_text)} 字元)")
+                
+            except Exception as e:
+                print(f"⚠️ 抓取不可線上繳納罰單時發生錯誤: {e}")
+                nopay_text = "無法抓取不可線上繳納罰單內容"
+            
+            # 合併兩個頁面的內容
+            result_text = f"=== 可線上繳納的罰單 ===\n{pagination_text}\n\n=== 不可線上繳納的罰單 ===\n{nopay_text}"
             
             print("查詢完成！")
             
             return {
                 "success": True,
                 "message": "查詢成功",
-                "captcha_code": captcha_code,
                 "user_id": user_id,
-                "result_url": result_url
+                "result_text": result_text
             }
             
         except Exception as e:
@@ -147,7 +190,8 @@ async def query_penalty(user_id: str, birthday: str, headless: bool = True) -> d
             return {
                 "success": False,
                 "message": "查詢失敗",
-                "error": str(e)
+                "error": str(e),
+                "result_text": None
             }
         finally:
             await browser.close()
